@@ -1,0 +1,95 @@
+=head1 NAME
+
+B<bark> - execute utility and send completion notification via Pushover
+
+=head1 SYNOPSIS
+
+ $ bark [options --] utility [argument ...]
+
+=head1 DESCRIPTION
+
+Bark runs the specified utility as a child process, waits for it to complete, and then delivers a completion notification to your mobile device via the Pushover HTTP API.  Access to the entire Pushover API is available through command line options and/or a configuration file.  You must have a Pushover account and a mobile device with the Pushover app installed to use this script.
+
+System administrators and programmers might find bark useful.  For example, a system administrator may want know when a data restore is complete so they can restart processing with minimal delay.  A programmer may want to know when their program is done compiling so they can begin regression testing promptly.  In both cases, bark helps those users get back on task quickly without them having to baby sit their terminals.
+
+=head1 OPTIONS
+
+B<--device>=device-name - device to recieve the message rather than all of your devices
+
+B<--help> - display a help summary
+
+B<--man> - display a full manual page
+
+B<--message>=message-text - your message, otherwise a default message is created and sent
+
+B<--priority>=priority-code - send as -1 to always send as a quiet notification, 1 to display as high-priority and bypass the user's quiet hours, or 2 to also require confirmation from the user
+
+B<--sound>=sound - the name of one of the sounds supported by clients device to override the user's default sound choice
+
+B<--timestamp>=timestamp - a Unix timestamp of your message's date and time to display to the user, rather than the time your message is received by our API
+
+B<--title>=title-text - message title, otherwise 'bark' is used
+
+B<--url>=URL - a supplementary URL to show with your message
+
+B<--url_title>=title - a title for your supplementary URL, otherwise just the URL is shown
+
+B<--user>=user-key - B<required> user key (not e-mail address) of your Pushover account.  May be specificed on the command line or in the configuration file.
+
+=head1 EXAMPLES
+
+Notify after the make utility completes:
+
+ $ bark --user=USER-KEY -- make
+
+Notify after the make utility completes ('user' defined in the config file):
+
+ $ bark make
+
+Notify after sleeping for a second:
+
+ $ bark --message="I'm tired" -- sleep 1
+
+Notify after a Mercurial pull and update is completed:
+
+ $ bark --title="Get Back to Work" -- hg pull -u
+
+Use the 'true' utility to send a message without really doing anything, possibly in a cron job.
+
+ $ bark --title="Alert from cron" --message="A scheduled message." -- /usr/bin/true
+
+=head1 INSTALLATION
+
+=over
+
+=item 1
+
+Clone the git repository or download the bark Perl script.
+
+=item 2
+
+Install Mojolicious from CPAN
+
+ $ curl get.mojolicio.us | sh
+
+=item 3
+
+Establish a Pushover account via L<https://pushover.net/login>
+
+=back
+
+=head1 FILES
+
+F<$HOME/.bark> optional configuration file containing one "option=value" pair
+per line.  See OPTIONS for a listing of acceptable configuration options.
+
+=head1 AUTHOR
+
+James Razmus II, E<lt>jim@bonetruck.orgE<gt>
+
+Source code at L<http://github.com/bonetruck/bark>
+
+=head1 SEE ALSO
+
+L<http://pushover.net>, L<http://mojolicio.us>
+

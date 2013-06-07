@@ -1,0 +1,174 @@
+#!/usr/bin/perl
+
+# Copyright (c) 2013, James Razmus II <jim@bonetruck.org>
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice,
+#    this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+use strict;
+use warnings;
+use Getopt::Long;
+use Mojo::UserAgent;
+use Pod::Usage;
+use Sys::Hostname;
+
+our $VERSION = '1.00';
+
+my %m;
+
+if ( -r "$ENV{HOME}/.bark" ) {
+    open my $dotfile, '<', "$ENV{HOME}/.bark" or die "open fail: $!\n";
+    while (<$dotfile>) {
+        next if (/^#.*/);
+        chomp;
+        my ( $k, $v ) = split /=/;
+        $m{ lc $k } = $v;
+    }
+    close $dotfile;
+}
+
+GetOptions(
+    \%m,         'device=s',   'help',        'man',
+    'message=s', 'priority=s', 'sound=s',     'timestamp=s',
+    'title=s',   'url=s',      'url_title=s', 'user=s',
+    'version'
+) or pod2usage(1);
+
+defined $m{'help'}    && pod2usage(1);
+defined $m{'man'}     && pod2usage( -verbose => 2 );
+defined $m{'version'} && pod2usage("bark version: $VERSION\n");
+defined $m{'user'} || pod2usage("ERROR: 'user' is required.\n");
+scalar @ARGV       || pod2usage(1);
+-x $ARGV[0]        || pod2usage("ERROR: '$ARGV[0]' is not executable.\n");
+
+$m{'token'} = 'BbEpgYXcCtpg71iy9rfcQ8Lv2aEgKf';
+
+my $pid;
+my $secs = time;
+( $pid = fork ) ? waitpid( $pid, 0 ) : exec @ARGV or die "$!\n";
+$secs = time - $secs;
+
+defined $m{'message'} or $m{'message'} = hostname() . " ($ARGV[0]) $secs secs.";
+
+my $ua = Mojo::UserAgent->new();
+my $tx = $ua->post( 'https://api.pushover.net/1/messages.json' => form => \%m );
+$tx->success || die "ERROR: $tx->res->body , $tx->res->error\n";
+
+exit 0;
+
+__END__
+
+=head1 NAME
+
+B<bark> - execute utility and send completion notification via Pushover
+
+=head1 SYNOPSIS
+
+ $ bark [options --] utility [argument ...]
+
+=head1 DESCRIPTION
+
+Bark runs the specified utility as a child process, waits for it to complete, and then delivers a completion notification to your mobile device via the Pushover HTTP API.  Access to the entire Pushover API is available through command line options and/or a configuration file.  You must have a Pushover account and a mobile device with the Pushover app installed to use this script.
+
+System administrators and programmers might find bark useful.  For example, a system administrator may want know when a data restore is complete so they can restart processing with minimal delay.  A programmer may want to know when their program is done compiling so they can begin regression testing promptly.  In both cases, bark helps those users get back on task quickly without them having to baby sit their terminals.
+
+=head1 OPTIONS
+
+B<--device>=device-name - device to recieve the message rather than all of your devices
+
+B<--help> - display a help summary
+
+B<--man> - display a full manual page
+
+B<--message>=message-text - your message, otherwise a default message is created and sent
+
+B<--priority>=priority-code - send as -1 to always send as a quiet notification, 1 to display as high-priority and bypass the user's quiet hours, or 2 to also require confirmation from the user
+
+B<--sound>=sound - the name of one of the sounds supported by clients device to override the user's default sound choice
+
+B<--timestamp>=timestamp - a Unix timestamp of your message's date and time to display to the user, rather than the time your message is received by our API
+
+B<--title>=title-text - message title, otherwise 'bark' is used
+
+B<--url>=URL - a supplementary URL to show with your message
+
+B<--url_title>=title - a title for your supplementary URL, otherwise just the URL is shown
+
+B<--user>=user-key - B<required> user key (not e-mail address) of your Pushover account.  May be specificed on the command line or in the configuration file.
+
+=head1 EXAMPLES
+
+Notify after the make utility completes:
+
+ $ bark --user=USER-KEY -- make
+
+Notify after the make utility completes ('user' defined in the config file):
+
+ $ bark make
+
+Notify after sleeping for a second:
+
+ $ bark --message="I'm tired" -- sleep 1
+
+Notify after a Mercurial pull and update is completed:
+
+ $ bark --title="Get Back to Work" -- hg pull -u
+
+Use the 'true' utility to send a message without really doing anything, possibly in a cron job.
+
+ $ bark --title="Alert from cron" --message="A scheduled message." -- /usr/bin/true
+
+=head1 INSTALLATION
+
+=over
+
+=item 1
+
+Clone the git repository or download the bark Perl script.
+
+=item 2
+
+Install Mojolicious from CPAN
+
+ $ curl get.mojolicio.us | sh
+
+=item 3
+
+Establish a Pushover account via L<https://pushover.net/login>
+
+=back
+
+=head1 FILES
+
+F<$HOME/.bark> optional configuration file containing one "option=value" pair
+per line.  See OPTIONS for a listing of acceptable configuration options.
+
+=head1 AUTHOR
+
+James Razmus II, E<lt>jim@bonetruck.orgE<gt>
+
+Source code at L<http://github.com/bonetruck/bark>
+
+=head1 SEE ALSO
+
+L<http://pushover.net>, L<http://mojolicio.us>
+
+=cut
