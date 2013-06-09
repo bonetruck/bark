@@ -30,7 +30,7 @@ use Mojo::UserAgent;
 use Pod::Usage;
 use Sys::Hostname;
 
-our $VERSION = '1.00';
+our $VERSION = '1.01';
 
 my %m;
 
@@ -57,7 +57,7 @@ defined $m{'man'}     && pod2usage( -verbose => 2 );
 defined $m{'version'} && pod2usage("bark version: $VERSION\n");
 defined $m{'user'} || pod2usage("ERROR: 'user' is required.\n");
 scalar @ARGV       || pod2usage(1);
--x $ARGV[0]        || pod2usage("ERROR: '$ARGV[0]' is not executable.\n");
+#-x $ARGV[0]        || pod2usage("ERROR: '$ARGV[0]' is not executable.\n");
 
 $m{'token'} = 'BbEpgYXcCtpg71iy9rfcQ8Lv2aEgKf';
 
